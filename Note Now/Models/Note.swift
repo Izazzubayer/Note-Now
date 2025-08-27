@@ -7,6 +7,8 @@ struct Note: Identifiable, Codable {
     let createdAt: Date
     var isPinned: Bool
     var lastModified: Date
+    var tags: Set<String>
+    var folder: String?
     
     init(title: String, body: String) {
         self.id = UUID()
@@ -15,26 +17,72 @@ struct Note: Identifiable, Codable {
         self.createdAt = Date()
         self.isPinned = false
         self.lastModified = Date()
+        self.tags = []
+        self.folder = nil
     }
     
-    init(id: UUID, title: String, body: String, createdAt: Date, isPinned: Bool = false, lastModified: Date? = nil) {
+    init(id: UUID, title: String, body: String, createdAt: Date, isPinned: Bool = false, lastModified: Date? = nil, tags: Set<String> = [], folder: String? = nil) {
         self.id = id
         self.title = title
         self.body = body
         self.createdAt = createdAt
         self.isPinned = isPinned
         self.lastModified = lastModified ?? createdAt
+        self.tags = tags
+        self.folder = folder
+    }
+    
+    // MARK: - Computed Properties
+    var size: Int {
+        return title.count + body.count
+    }
+    
+    var ageGroup: AgeGroup {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        if calendar.isDateInToday(createdAt) {
+            return .today
+        } else if calendar.isDateInYesterday(createdAt) {
+            return .yesterday
+        } else if calendar.isDate(createdAt, equalTo: now, toGranularity: .weekOfYear) {
+            return .thisWeek
+        } else {
+            return .older
+        }
     }
 }
 
-// MARK: - Preview Helpers
-extension Note {
-    static let sampleNotes = [
-        Note(title: "Meeting Notes", body: "Discuss Q4 strategy and budget allocation. Team needs to prepare presentations for stakeholders. Follow up on action items from last meeting."),
-        Note(title: "Shopping List", body: "Milk, bread, eggs, vegetables, fruits, and some snacks for the weekend."),
-        Note(title: "Project Ideas", body: "Consider building a productivity app that integrates with existing tools. Research market demand and potential competitors."),
-        Note(title: "Daily Reflection", body: "Today was productive. Completed the main task ahead of schedule. Need to plan tomorrow's priorities."),
-        Note(title: "Book Recommendations", body: "The Pragmatic Programmer, Clean Code, Design Patterns, and Refactoring are must-reads for developers."),
-        Note(title: "Travel Plans", body: "Planning a trip to Japan next spring. Research best time to visit, places to see, and cultural etiquette.")
-    ]
+// MARK: - Age Group Enum
+enum AgeGroup: String, CaseIterable {
+    case today = "Today"
+    case yesterday = "Yesterday"
+    case thisWeek = "This Week"
+    case older = "Older"
 }
+
+// MARK: - Sort Options
+enum SortOption: String, CaseIterable {
+    case lastEdited = "Last Edited"
+    case createdDate = "Created Date"
+    case titleAZ = "Title A→Z"
+    case titleZA = "Title Z→A"
+    case size = "Size"
+    case manual = "Manual"
+}
+
+// MARK: - View Modes
+enum ViewMode: String, CaseIterable {
+    case list = "List"
+    case grid = "Grid"
+    case compact = "Compact"
+    case twoPane = "Two Pane"
+}
+
+// MARK: - Density Settings
+enum DensitySetting: String, CaseIterable {
+    case comfortable = "Comfortable"
+    case compact = "Compact"
+}
+
+

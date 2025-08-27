@@ -29,32 +29,40 @@ struct NoteCellView: View {
             }
             
             // Timestamps and pin status
-            HStack {
-                if note.isPinned {
-                    Image(systemName: "pin.fill")
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                // Creation date and pin status
+                HStack {
+                    if note.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 12))
+                            .appPrimaryText()
+                    }
+                    
+                    Image(systemName: "clock")
                         .font(.system(size: 12))
-                        .appPrimaryText()
-                }
-                
-                Image(systemName: "clock")
-                    .font(.system(size: 12))
-                    .appTertiaryText()
-                
-                Text(formattedTimestamp)
-                    .font(AppTheme.Typography.footnote)
-                    .appTertiaryText()
-                
-                if note.lastModified != note.createdAt {
-                    Text("•")
+                        .appTertiaryText()
+                    
+                    Text(formattedTimestamp)
                         .font(AppTheme.Typography.footnote)
                         .appTertiaryText()
                     
-                    Text("Modified \(formattedLastModified)")
-                        .font(AppTheme.Typography.footnote)
-                        .appTertiaryText()
+                    Spacer()
                 }
                 
-                Spacer()
+                // Modified date (if different from creation)
+                if note.lastModified != note.createdAt {
+                    HStack {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 12))
+                            .appTertiaryText()
+                        
+                        Text("Modified \(formattedLastModified)")
+                            .font(AppTheme.Typography.footnote)
+                            .appTertiaryText()
+                        
+                        Spacer()
+                    }
+                }
             }
             .accessibilityLabel("Created on \(formattedTimestamp)\(note.isPinned ? ", pinned" : "")")
         }

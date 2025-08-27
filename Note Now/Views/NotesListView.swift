@@ -6,6 +6,7 @@ struct NotesListView: View {
     @State private var showingCompose = false
     @State private var selectedNote: Note?
     @State private var showingEditNote = false
+    @State private var showingSidebar = false
     
     var body: some View {
         NavigationView {
@@ -15,7 +16,7 @@ struct NotesListView: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Header with title and search
+                    // Header with title
                     VStack(spacing: AppTheme.Spacing.md) {
                         // Large "Notes" title
                         Text("Notes")
@@ -26,36 +27,47 @@ struct NotesListView: View {
                             .padding(.horizontal, AppTheme.Spacing.lg)
                             .padding(.top, AppTheme.Spacing.md)
                         
-                        // Search field
-                        HStack {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(AppTheme.tertiary)
-                                .font(.system(size: 17))
+                        // Search bar and sorting controls
+                        HStack(spacing: AppTheme.Spacing.md) {
+                            // Search bar
+                            HStack {
+                                Image(systemName: "magnifyingglass")
+                                    .foregroundColor(AppTheme.tertiary)
+                                
+                                TextField("Search notes", text: $searchText)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                                    .foregroundColor(AppTheme.primary)
+                            }
+                            .padding(.horizontal, AppTheme.Spacing.md)
+                            .padding(.vertical, AppTheme.Spacing.sm)
+                            .background(AppTheme.surface)
+                            .cornerRadius(AppTheme.CornerRadius.medium)
                             
-                            TextField("Search notes", text: $searchText)
-                                .font(AppTheme.Typography.body)
-                                .appPrimaryText()
-                                .textFieldStyle(PlainTextFieldStyle())
-                            
-                            if !searchText.isEmpty {
-                                Button(action: {
-                                    searchText = ""
-                                }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(AppTheme.tertiary)
-                                        .font(.system(size: 17))
+                            // Sort button
+                            Menu {
+                                ForEach(SortOption.allCases, id: \.self) { option in
+                                    Button(option.rawValue) {
+                                        viewModel.selectedSortOption = option
+                                    }
                                 }
-                                .accessibilityLabel("Clear search")
+                            } label: {
+                                HStack {
+                                    Image(systemName: "arrow.up.arrow.down")
+                                    Text(viewModel.selectedSortOption.rawValue)
+                                        .font(AppTheme.Typography.caption)
+                                }
+                                .foregroundColor(AppTheme.primary)
+                                .padding(.horizontal, AppTheme.Spacing.md)
+                                .padding(.vertical, AppTheme.Spacing.sm)
+                                .background(AppTheme.surface)
+                                .cornerRadius(AppTheme.CornerRadius.medium)
                             }
                         }
-                        .padding(AppTheme.Spacing.md)
-                        .background(AppTheme.surface)
-                        .cornerRadius(AppTheme.CornerRadius.medium)
                         .padding(.horizontal, AppTheme.Spacing.lg)
                     }
                     .padding(.bottom, AppTheme.Spacing.md)
                     
-                    // Notes list
+                    // Notes content
                     if viewModel.filteredNotes(searchText: searchText).isEmpty {
                         // Empty state
                         VStack(spacing: AppTheme.Spacing.lg) {
@@ -80,7 +92,7 @@ struct NotesListView: View {
                     } else {
                         // Notes list
                         ScrollView {
-                            LazyVStack(spacing: 0) {
+                            LazyVStack(spacing: AppTheme.Spacing.sm) {
                                 ForEach(viewModel.filteredNotes(searchText: searchText)) { note in
                                     NoteCellView(note: note)
                                         .onTapGesture {
