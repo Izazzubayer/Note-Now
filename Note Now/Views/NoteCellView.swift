@@ -3,6 +3,15 @@ import SwiftUI
 struct NoteCellView: View {
     let note: Note
     
+    // MARK: - Cached Properties
+    private var formattedTimestamp: String {
+        NoteCellView.dateFormatter.string(from: note.createdAt)
+    }
+    
+    private var formattedLastModified: String {
+        NoteCellView.shortDateFormatter.string(from: note.lastModified)
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
             // Title
@@ -70,30 +79,29 @@ struct NoteCellView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppTheme.surface)
         .cornerRadius(AppTheme.CornerRadius.medium)
-        .overlay(
-            RoundedRectangle(cornerRadius: AppTheme.CornerRadius.medium)
-                .stroke(AppTheme.separator, lineWidth: 0.5)
-        )
+
         .padding(.bottom, AppTheme.Spacing.sm)
     }
     
-    private var formattedTimestamp: String {
+}
+
+// MARK: - Static Date Formatters (Cached)
+extension NoteCellView {
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         formatter.locale = Locale.current
-        
-        return formatter.string(from: note.createdAt)
-    }
+        return formatter
+    }()
     
-    private var formattedLastModified: String {
+    private static let shortDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
         formatter.timeStyle = .short
         formatter.locale = Locale.current
-        
-        return formatter.string(from: note.lastModified)
-    }
+        return formatter
+    }()
 }
 
 #Preview("Note Cell") {

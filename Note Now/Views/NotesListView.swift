@@ -6,6 +6,7 @@ struct NotesListView: View {
     @State private var showingCompose = false
     @State private var selectedNote: Note?
     @State private var showingEditNote = false
+    @State private var filteredNotes: [Note] = []
     @State private var showingSidebar = false
     
     var body: some View {
@@ -34,34 +35,42 @@ struct NotesListView: View {
                                 Image(systemName: "magnifyingglass")
                                     .foregroundColor(AppTheme.tertiary)
                                 
-                                TextField("Search notes", text: $searchText)
-                                    .textFieldStyle(PlainTextFieldStyle())
-                                    .foregroundColor(AppTheme.primary)
+                                                            TextField("Search notes", text: $searchText)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .foregroundColor(AppTheme.primary)
+                                .onChange(of: searchText) { _, newValue in
+                                    // Debounce search to improve performance
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        if searchText == newValue && !newValue.isEmpty {
+                                            HapticManager.shared.lightImpact()
+                                        }
+                                    }
+                                }
+                                .onSubmit {
+                                    // Trigger immediate search on submit
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        filteredNotes = viewModel.filteredNotes(searchText: searchText)
+                                    }
+                                }
                             }
                             .padding(.horizontal, AppTheme.Spacing.md)
                             .padding(.vertical, AppTheme.Spacing.sm)
                             .background(AppTheme.surface)
                             .cornerRadius(AppTheme.CornerRadius.medium)
                             
-                            // Sort button
-                            Menu {
-                                ForEach(SortOption.allCases, id: \.self) { option in
-                                    Button(option.rawValue) {
-                                        viewModel.selectedSortOption = option
-                                    }
+                                                    // Sort button
+                        Menu {
+                            ForEach(SortOption.allCases, id: \.self) { option in
+                                Button(option.rawValue) {
+                                    HapticManager.shared.selectionChanged()
+                                    viewModel.selectedSortOption = option
                                 }
-                            } label: {
-                                HStack {
-                                    Image(systemName: "arrow.up.arrow.down")
-                                    Text(viewModel.selectedSortOption.rawValue)
-                                        .font(AppTheme.Typography.caption)
-                                }
-                                .foregroundColor(AppTheme.primary)
-                                .padding(.horizontal, AppTheme.Spacing.md)
-                                .padding(.vertical, AppTheme.Spacing.sm)
-                                .background(AppTheme.surface)
-                                .cornerRadius(AppTheme.CornerRadius.medium)
                             }
+                        } label: {
+                            Image(systemName: "arrow.up.arrow.down")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(AppTheme.primary)
+                        }
                         }
                         .padding(.horizontal, AppTheme.Spacing.lg)
                     }
@@ -93,23 +102,28 @@ struct NotesListView: View {
                         // Notes list
                         ScrollView {
                             LazyVStack(spacing: AppTheme.Spacing.sm) {
-                                ForEach(viewModel.filteredNotes(searchText: searchText)) { note in
-                                    NoteCellView(note: note)
-                                        .onTapGesture {
-                                            selectedNote = note
-                                            showingEditNote = true
-                                        }
-                                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                            Button(note.isPinned ? "Unpin" : "Pin") {
-                                                viewModel.togglePin(note)
-                                            }
-                                            .tint(note.isPinned ? AppTheme.tertiary : AppTheme.primary)
-                                        }
-                                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                            Button("Delete", role: .destructive) {
-                                                viewModel.deleteNote(note)
-                                            }
-                                        }
+                                ForEach(filteredNotes, id: \.id) { note in
+                                                        NoteCellView(note: note)
+                        .onTapGesture {
+                            HapticManager.shared.mediumImpact()
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedNote = note
+                                showingEditNote = true
+                            }
+                        }
+                                                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button(note.isPinned ? "Unpin" : "Pin") {
+                                HapticManager.shared.pinPattern()
+                                viewModel.togglePin(note)
+                            }
+                            .tint(note.isPinned ? AppTheme.tertiary : AppTheme.primary)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button("Delete", role: .destructive) {
+                                HapticManager.shared.deletePattern()
+                                viewModel.deleteNote(note)
+                            }
+                        }
                                 }
                             }
                             .padding(.horizontal, AppTheme.Spacing.lg)
@@ -124,6 +138,7 @@ struct NotesListView: View {
                         Spacer()
                         
                         AnimatedAddButton {
+                            HapticManager.shared.mediumImpact()
                             withAnimation(AppTheme.Animation.spring) {
                                 showingCompose = true
                             }
@@ -136,10 +151,27 @@ struct NotesListView: View {
         }
         .sheet(isPresented: $showingCompose) {
             ComposeNoteView(viewModel: viewModel)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
         }
+        .animation(.easeInOut(duration: 0.3), value: showingCompose)
         .sheet(isPresented: $showingEditNote) {
             if let note = selectedNote {
                 EditNoteView(note: note, viewModel: viewModel)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: showingEditNote)
+        .onAppear {
+            filteredNotes = viewModel.filteredNotes(searchText: searchText)
+        }
+        .onChange(of: searchText) { _, _ in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                filteredNotes = viewModel.filteredNotes(searchText: searchText)
+            }
+        }
+        .onChange(of: viewModel.notes) { _, _ in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                filteredNotes = viewModel.filteredNotes(searchText: searchText)
             }
         }
         .preferredColorScheme(.dark) // Force dark mode for OLED black

@@ -45,6 +45,11 @@ struct ComposeNoteView: View {
                             .appPrimaryText()
                             .textFieldStyle(PlainTextFieldStyle())
                             .focused($focusedField, equals: .title)
+                            .onSubmit {
+                                // Move focus to body field when Return is pressed
+                                focusedField = .body
+                            }
+                            .submitLabel(.next)
                             .padding(.horizontal, AppTheme.Spacing.lg)
                             .accessibilityLabel("Note title")
                             .accessibilityHint("Enter the title for your note")
@@ -71,6 +76,7 @@ struct ComposeNoteView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
+                        HapticManager.shared.cancelPattern()
                         dismiss()
                     }
                     .font(AppTheme.Typography.body)
@@ -127,8 +133,7 @@ struct ComposeNoteView: View {
             viewModel.addNote(note)
             
             // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            HapticManager.shared.savePattern()
             
             dismiss()
         }

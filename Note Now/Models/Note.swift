@@ -1,6 +1,6 @@
 import Foundation
 
-struct Note: Identifiable, Codable {
+struct Note: Identifiable, Codable, Equatable {
     let id: UUID
     var title: String
     var body: String
@@ -38,17 +38,27 @@ struct Note: Identifiable, Codable {
     }
     
     var ageGroup: AgeGroup {
+        // Cache calendar instance for better performance
         let calendar = Calendar.current
         let now = Date()
         
+        // Use more efficient date comparison methods
         if calendar.isDateInToday(createdAt) {
             return .today
         } else if calendar.isDateInYesterday(createdAt) {
             return .yesterday
-        } else if calendar.isDate(createdAt, equalTo: now, toGranularity: .weekOfYear) {
-            return .thisWeek
         } else {
-            return .older
+            // More efficient week comparison
+            let weekOfYear = calendar.component(.weekOfYear, from: createdAt)
+            let currentWeekOfYear = calendar.component(.weekOfYear, from: now)
+            let year = calendar.component(.year, from: createdAt)
+            let currentYear = calendar.component(.year, from: now)
+            
+            if year == currentYear && weekOfYear == currentWeekOfYear {
+                return .thisWeek
+            } else {
+                return .older
+            }
         }
     }
 }

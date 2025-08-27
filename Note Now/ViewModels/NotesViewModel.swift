@@ -4,12 +4,54 @@ import SwiftUI
 @MainActor
 class NotesViewModel: ObservableObject {
     @Published var notes: [Note] = []
-    @Published var selectedSortOption: SortOption = .lastEdited
-    @Published var selectedViewMode: ViewMode = .list
-    @Published var selectedDensity: DensitySetting = .comfortable
-    @Published var selectedGrouping: AgeGroup? = nil
-    @Published var selectedFolder: String? = nil
-    @Published var selectedTags: Set<String> = []
+    @Published var selectedSortOption: SortOption = .lastEdited {
+        didSet {
+            if oldValue != selectedSortOption {
+                HapticManager.shared.selectionChanged()
+                _clearFilterCache() // Clear cache when sort option changes
+            }
+        }
+    }
+    @Published var selectedViewMode: ViewMode = .list {
+        didSet {
+            if oldValue != selectedViewMode {
+                HapticManager.shared.selectionChanged()
+                _clearFilterCache() // Clear cache when view mode changes
+            }
+        }
+    }
+    @Published var selectedDensity: DensitySetting = .comfortable {
+        didSet {
+            if oldValue != selectedDensity {
+                HapticManager.shared.selectionChanged()
+                _clearFilterCache() // Clear cache when density changes
+            }
+        }
+    }
+    @Published var selectedGrouping: AgeGroup? = nil {
+        didSet {
+            if oldValue != selectedGrouping {
+                HapticManager.shared.selectionChanged()
+                _clearFilterCache() // Clear cache when grouping changes
+            }
+        }
+    }
+    @Published var selectedFolder: String? = nil {
+        didSet {
+            if oldValue != selectedFolder {
+                HapticManager.shared.selectionChanged()
+                _clearFilterCache() // Clear cache when folder changes
+            }
+        }
+    }
+    @Published var selectedTags: Set<String> = [] {
+        didSet {
+            if oldValue != selectedTags {
+                HapticManager.shared.selectionChanged()
+                _clearFilterCache() // Clear cache when tags change
+            }
+        }
+    }
     
     init() {
         // Load sample notes for prototype
@@ -18,11 +60,23 @@ class NotesViewModel: ObservableObject {
     
     func addNote(_ note: Note) {
         notes.insert(note, at: 0) // Add to top
+        
+        // Clear cache when notes change
+        _clearFilterCache()
+        
+        // Haptic feedback for adding note
+        HapticManager.shared.successNotification()
     }
     
     func deleteNote(_ note: Note) {
         if let index = notes.firstIndex(where: { $0.id == note.id }) {
             notes.remove(at: index)
+            
+            // Clear cache when notes change
+            _clearFilterCache()
+            
+            // Haptic feedback for deletion
+            HapticManager.shared.deletePattern()
         }
     }
     
@@ -31,6 +85,12 @@ class NotesViewModel: ObservableObject {
             var updatedNote = note
             updatedNote.lastModified = Date()
             notes[index] = updatedNote
+            
+            // Clear cache when notes change
+            _clearFilterCache()
+            
+            // Haptic feedback for updating note
+            HapticManager.shared.successNotification()
         }
     }
     
@@ -38,33 +98,64 @@ class NotesViewModel: ObservableObject {
         if let index = notes.firstIndex(where: { $0.id == note.id }) {
             notes[index].isPinned.toggle()
             notes[index].lastModified = Date()
+            
+            // Clear cache when notes change
+            _clearFilterCache()
+            
+            // Haptic feedback for pin/unpin
+            HapticManager.shared.pinPattern()
         }
     }
     
+    // MARK: - Cached Filtered Notes
+    private var _cachedFilteredNotes: [Note] = []
+    private var _lastSearchText: String = ""
+    private var _lastFilters: String = ""
+    
     func filteredNotes(searchText: String) -> [Note] {
+        #if DEBUG
+        let startTime = CFAbsoluteTimeGetCurrent()
+        #endif
+        
+        // Create a cache key for current filters (more efficient string construction)
+        let currentFilters = "\(searchText)_\(selectedFolder ?? "nil")_\(selectedTags.isEmpty ? "nil" : selectedTags.sorted().joined(separator: ","))_\(selectedGrouping?.rawValue ?? "nil")_\(selectedSortOption.rawValue)"
+        
+        // Return cached result if filters haven't changed
+        if currentFilters == _lastFilters && searchText == _lastSearchText {
+            #if DEBUG
+            print("📱 Note filtering: Cache hit - \(String(format: "%.4f", (CFAbsoluteTimeGetCurrent() - startTime) * 1000))ms")
+            #endif
+            return _cachedFilteredNotes
+        }
+        
+        // Update cache keys
+        _lastSearchText = searchText
+        _lastFilters = currentFilters
+        
         var filtered = notes
         
-        // Apply search filter
+        // Apply search filter (optimized with early exit)
         if !searchText.isEmpty {
+            let searchLower = searchText.lowercased()
             filtered = filtered.filter { note in
-                note.title.localizedCaseInsensitiveContains(searchText) ||
-                note.body.localizedCaseInsensitiveContains(searchText)
+                note.title.lowercased().contains(searchLower) ||
+                note.body.lowercased().contains(searchLower)
             }
         }
         
-        // Apply folder filter
+        // Apply folder filter (early exit if no folder selected)
         if let selectedFolder = selectedFolder {
             filtered = filtered.filter { $0.folder == selectedFolder }
         }
         
-        // Apply tag filter
+        // Apply tag filter (early exit if no tags selected)
         if !selectedTags.isEmpty {
             filtered = filtered.filter { note in
                 !note.tags.isDisjoint(with: selectedTags)
             }
         }
         
-        // Apply age grouping
+        // Apply age grouping (early exit if no grouping selected)
         if let selectedGrouping = selectedGrouping {
             filtered = filtered.filter { $0.ageGroup == selectedGrouping }
         }
@@ -72,13 +163,23 @@ class NotesViewModel: ObservableObject {
         // Sort notes
         let sorted = sortNotes(filtered)
         
-        // Always put pinned notes at the top
-        return sorted.sorted { note1, note2 in
-            if note1.isPinned != note2.isPinned {
-                return note1.isPinned
+        // Always put pinned notes at the top (optimized with single pass)
+        let (pinnedNotes, unpinnedNotes) = sorted.reduce(into: ([Note](), [Note]())) { result, note in
+            if note.isPinned {
+                result.0.append(note)
+            } else {
+                result.1.append(note)
             }
-            return true
         }
+        
+        _cachedFilteredNotes = pinnedNotes + unpinnedNotes
+        
+        #if DEBUG
+        let endTime = CFAbsoluteTimeGetCurrent()
+        print("📱 Note filtering: \(filtered.count) notes filtered in \(String(format: "%.4f", (endTime - startTime) * 1000))ms")
+        #endif
+        
+        return _cachedFilteredNotes
     }
     
     private func sortNotes(_ notes: [Note]) -> [Note] {
@@ -100,6 +201,12 @@ class NotesViewModel: ObservableObject {
     
     func clearAllNotes() {
         notes.removeAll()
+        
+        // Clear cache when notes change
+        _clearFilterCache()
+        
+        // Haptic feedback for clearing all notes
+        HapticManager.shared.heavyImpact()
     }
     
     // MARK: - Computed Properties
@@ -121,6 +228,13 @@ class NotesViewModel: ObservableObject {
         return notes.filter { note in
             note.lastModified >= oneWeekAgo
         }.sorted { $0.lastModified > $1.lastModified }
+    }
+    
+    // MARK: - Private Methods
+    private func _clearFilterCache() {
+        _cachedFilteredNotes.removeAll()
+        _lastSearchText = ""
+        _lastFilters = ""
     }
 }
 

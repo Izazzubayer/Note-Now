@@ -66,6 +66,11 @@ struct EditNoteView: View {
                             .appPrimaryText()
                             .textFieldStyle(PlainTextFieldStyle())
                             .focused($focusedField, equals: .title)
+                            .onSubmit {
+                                // Move focus to body field when Return is pressed
+                                focusedField = .body
+                            }
+                            .submitLabel(.next)
                             .padding(.horizontal, AppTheme.Spacing.lg)
                             .accessibilityLabel("Note title")
                             .accessibilityHint("Edit the title for your note")
@@ -92,6 +97,7 @@ struct EditNoteView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
+                        HapticManager.shared.cancelPattern()
                         dismiss()
                     }
                     .font(AppTheme.Typography.body)
@@ -101,6 +107,7 @@ struct EditNoteView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
+                        HapticManager.shared.savePattern()
                         saveNote()
                     }
                     .font(AppTheme.Typography.body)
@@ -151,9 +158,7 @@ struct EditNoteView: View {
             
             viewModel.updateNote(updatedNote)
             
-            // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            // Haptic feedback already triggered in Save button
             
             dismiss()
         }

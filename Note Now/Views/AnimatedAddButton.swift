@@ -7,8 +7,7 @@ struct AnimatedAddButton: View {
     var body: some View {
         Button(action: {
             // Haptic feedback on tap
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            HapticManager.shared.mediumImpact()
             
             // Trigger action
             action()
