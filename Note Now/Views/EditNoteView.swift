@@ -84,8 +84,6 @@ struct EditNoteView: View {
                             .appPrimaryText()
                             .focused($focusedField, equals: .body)
                             .scrollContentBackground(.hidden)
-                            .background(AppTheme.surface)
-                            .cornerRadius(AppTheme.CornerRadius.medium)
                             .padding(.horizontal, AppTheme.Spacing.lg)
                             .accessibilityLabel("Note content")
                             .accessibilityHint("Edit the content for your note")
