@@ -4,6 +4,8 @@ struct NotesListView: View {
     @StateObject private var viewModel = NotesViewModel()
     @State private var searchText = ""
     @State private var showingCompose = false
+    @State private var selectedNote: Note?
+    @State private var showingEditNote = false
     
     var body: some View {
         NavigationView {
@@ -82,7 +84,19 @@ struct NotesListView: View {
                                 ForEach(viewModel.filteredNotes(searchText: searchText)) { note in
                                     NoteCellView(note: note)
                                         .onTapGesture {
-                                            // Handle note selection
+                                            selectedNote = note
+                                            showingEditNote = true
+                                        }
+                                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                            Button(note.isPinned ? "Unpin" : "Pin") {
+                                                viewModel.togglePin(note)
+                                            }
+                                            .tint(note.isPinned ? AppTheme.tertiary : AppTheme.primary)
+                                        }
+                                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                            Button("Delete", role: .destructive) {
+                                                viewModel.deleteNote(note)
+                                            }
                                         }
                                 }
                             }
@@ -110,6 +124,11 @@ struct NotesListView: View {
         }
         .sheet(isPresented: $showingCompose) {
             ComposeNoteView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $showingEditNote) {
+            if let note = selectedNote {
+                EditNoteView(note: note, viewModel: viewModel)
+            }
         }
         .preferredColorScheme(.dark) // Force dark mode for OLED black
     }

@@ -5,19 +5,25 @@ struct Note: Identifiable, Codable {
     var title: String
     var body: String
     let createdAt: Date
+    var isPinned: Bool
+    var lastModified: Date
     
     init(title: String, body: String) {
         self.id = UUID()
         self.title = title
         self.body = body
         self.createdAt = Date()
+        self.isPinned = false
+        self.lastModified = Date()
     }
     
-    init(id: UUID, title: String, body: String, createdAt: Date) {
+    init(id: UUID, title: String, body: String, createdAt: Date, isPinned: Bool = false, lastModified: Date? = nil) {
         self.id = id
         self.title = title
         self.body = body
         self.createdAt = createdAt
+        self.isPinned = isPinned
+        self.lastModified = lastModified ?? createdAt
     }
 }
 

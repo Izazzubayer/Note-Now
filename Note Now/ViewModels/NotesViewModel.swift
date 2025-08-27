@@ -22,18 +22,31 @@ class NotesViewModel: ObservableObject {
     
     func updateNote(_ note: Note) {
         if let index = notes.firstIndex(where: { $0.id == note.id }) {
-            notes[index] = note
+            var updatedNote = note
+            updatedNote.lastModified = Date()
+            notes[index] = updatedNote
+        }
+    }
+    
+    func togglePin(_ note: Note) {
+        if let index = notes.firstIndex(where: { $0.id == note.id }) {
+            notes[index].isPinned.toggle()
+            notes[index].lastModified = Date()
         }
     }
     
     func filteredNotes(searchText: String) -> [Note] {
-        if searchText.isEmpty {
-            return notes
-        }
-        
-        return notes.filter { note in
+        let filtered = searchText.isEmpty ? notes : notes.filter { note in
             note.title.localizedCaseInsensitiveContains(searchText) ||
             note.body.localizedCaseInsensitiveContains(searchText)
+        }
+        
+        // Sort: pinned notes first, then by last modified date
+        return filtered.sorted { note1, note2 in
+            if note1.isPinned != note2.isPinned {
+                return note1.isPinned
+            }
+            return note1.lastModified > note2.lastModified
         }
     }
     

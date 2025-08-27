@@ -28,8 +28,14 @@ struct NoteCellView: View {
                     .accessibilityLabel("Note has no content")
             }
             
-            // Creation timestamp
+            // Timestamps and pin status
             HStack {
+                if note.isPinned {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 12))
+                        .appPrimaryText()
+                }
+                
                 Image(systemName: "clock")
                     .font(.system(size: 12))
                     .appTertiaryText()
@@ -37,8 +43,20 @@ struct NoteCellView: View {
                 Text(formattedTimestamp)
                     .font(AppTheme.Typography.footnote)
                     .appTertiaryText()
+                
+                if note.lastModified != note.createdAt {
+                    Text("•")
+                        .font(AppTheme.Typography.footnote)
+                        .appTertiaryText()
+                    
+                    Text("Modified \(formattedLastModified)")
+                        .font(AppTheme.Typography.footnote)
+                        .appTertiaryText()
+                }
+                
+                Spacer()
             }
-            .accessibilityLabel("Created on \(formattedTimestamp)")
+            .accessibilityLabel("Created on \(formattedTimestamp)\(note.isPinned ? ", pinned" : "")")
         }
         .padding(AppTheme.Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -58,6 +76,15 @@ struct NoteCellView: View {
         formatter.locale = Locale.current
         
         return formatter.string(from: note.createdAt)
+    }
+    
+    private var formattedLastModified: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        formatter.locale = Locale.current
+        
+        return formatter.string(from: note.lastModified)
     }
 }
 
