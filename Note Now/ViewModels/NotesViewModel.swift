@@ -9,6 +9,7 @@ class NotesViewModel: ObservableObject {
             if oldValue != selectedSortOption {
                 HapticManager.shared.selectionChanged()
                 _clearFilterCache() // Clear cache when sort option changes
+                objectWillChange.send() // Ensure view updates when sorting changes
             }
         }
     }
@@ -173,6 +174,9 @@ class NotesViewModel: ObservableObject {
         }
         
         _cachedFilteredNotes = pinnedNotes + unpinnedNotes
+        
+        // Update the published property
+        // filteredNotes = _cachedFilteredNotes // This line is removed
         
         #if DEBUG
         let endTime = CFAbsoluteTimeGetCurrent()

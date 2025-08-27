@@ -79,15 +79,12 @@ struct NoteCellView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppTheme.surface)
         .cornerRadius(AppTheme.CornerRadius.medium)
-
-        .padding(.bottom, AppTheme.Spacing.sm)
     }
-    
 }
 
 // MARK: - Static Date Formatters (Cached)
 extension NoteCellView {
-    private static let dateFormatter: DateFormatter = {
+    static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
@@ -95,7 +92,7 @@ extension NoteCellView {
         return formatter
     }()
     
-    private static let shortDateFormatter: DateFormatter = {
+    static let shortDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
         formatter.timeStyle = .short

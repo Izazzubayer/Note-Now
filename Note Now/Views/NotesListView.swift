@@ -6,7 +6,6 @@ struct NotesListView: View {
     @State private var showingCompose = false
     @State private var selectedNote: Note?
     @State private var showingEditNote = false
-    @State private var filteredNotes: [Note] = []
     @State private var showingSidebar = false
     
     var body: some View {
@@ -35,42 +34,40 @@ struct NotesListView: View {
                                 Image(systemName: "magnifyingglass")
                                     .foregroundColor(AppTheme.tertiary)
                                 
-                                                            TextField("Search notes", text: $searchText)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .foregroundColor(AppTheme.primary)
-                                .onChange(of: searchText) { _, newValue in
-                                    // Debounce search to improve performance
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                        if searchText == newValue && !newValue.isEmpty {
-                                            HapticManager.shared.lightImpact()
+                                TextField("Search notes", text: $searchText)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                                    .foregroundColor(AppTheme.primary)
+                                    .onChange(of: searchText) { _, newValue in
+                                        // Debounce search to improve performance
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                            if searchText == newValue && !newValue.isEmpty {
+                                                HapticManager.shared.lightImpact()
+                                            }
                                         }
                                     }
-                                }
-                                .onSubmit {
-                                    // Trigger immediate search on submit
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        filteredNotes = viewModel.filteredNotes(searchText: searchText)
+                                    .onSubmit {
+                                        // Trigger immediate search on submit
+                                        HapticManager.shared.lightImpact()
                                     }
-                                }
                             }
                             .padding(.horizontal, AppTheme.Spacing.md)
                             .padding(.vertical, AppTheme.Spacing.sm)
                             .background(AppTheme.surface)
                             .cornerRadius(AppTheme.CornerRadius.medium)
                             
-                                                    // Sort button
-                        Menu {
-                            ForEach(SortOption.allCases, id: \.self) { option in
-                                Button(option.rawValue) {
-                                    HapticManager.shared.selectionChanged()
-                                    viewModel.selectedSortOption = option
+                            // Sort button
+                            Menu {
+                                ForEach(SortOption.allCases, id: \.self) { option in
+                                    Button(option.rawValue) {
+                                        HapticManager.shared.selectionChanged()
+                                        viewModel.selectedSortOption = option
+                                    }
                                 }
+                            } label: {
+                                Image(systemName: "arrow.up.arrow.down")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(AppTheme.primary)
                             }
-                        } label: {
-                            Image(systemName: "arrow.up.arrow.down")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(AppTheme.primary)
-                        }
                         }
                         .padding(.horizontal, AppTheme.Spacing.lg)
                     }
@@ -100,34 +97,36 @@ struct NotesListView: View {
                         .padding(.horizontal, AppTheme.Spacing.lg)
                     } else {
                         // Notes list
-                        ScrollView {
-                            LazyVStack(spacing: AppTheme.Spacing.sm) {
-                                ForEach(filteredNotes, id: \.id) { note in
-                                                        NoteCellView(note: note)
-                        .onTapGesture {
-                            HapticManager.shared.mediumImpact()
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                selectedNote = note
-                                showingEditNote = true
+                        List {
+                            ForEach(viewModel.filteredNotes(searchText: searchText), id: \.id) { note in
+                                NoteCellView(note: note)
+                                    .onTapGesture {
+                                        HapticManager.shared.mediumImpact()
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            selectedNote = note
+                                            showingEditNote = true
+                                        }
+                                    }
+                                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                        Button(note.isPinned ? "Unpin" : "Pin") {
+                                            HapticManager.shared.pinPattern()
+                                            viewModel.togglePin(note)
+                                        }
+                                        .tint(note.isPinned ? AppTheme.tertiary : AppTheme.primary)
+                                    }
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                        Button("Delete", role: .destructive) {
+                                            HapticManager.shared.deletePattern()
+                                            viewModel.deleteNote(note)
+                                        }
+                                    }
+                                    .listRowBackground(Color.clear)
+                                    .listRowSeparator(.hidden)
+                                    .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
                             }
                         }
-                                                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            Button(note.isPinned ? "Unpin" : "Pin") {
-                                HapticManager.shared.pinPattern()
-                                viewModel.togglePin(note)
-                            }
-                            .tint(note.isPinned ? AppTheme.tertiary : AppTheme.primary)
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button("Delete", role: .destructive) {
-                                HapticManager.shared.deletePattern()
-                                viewModel.deleteNote(note)
-                            }
-                        }
-                                }
-                            }
-                            .padding(.horizontal, AppTheme.Spacing.lg)
-                        }
+                        .listStyle(PlainListStyle())
+                        .background(Color.clear)
                     }
                 }
                 
@@ -161,18 +160,8 @@ struct NotesListView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: showingEditNote)
-        .onAppear {
-            filteredNotes = viewModel.filteredNotes(searchText: searchText)
-        }
         .onChange(of: searchText) { _, _ in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                filteredNotes = viewModel.filteredNotes(searchText: searchText)
-            }
-        }
-        .onChange(of: viewModel.notes) { _, _ in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                filteredNotes = viewModel.filteredNotes(searchText: searchText)
-            }
+            // Trigger view update when search text changes
         }
         .preferredColorScheme(.dark) // Force dark mode for OLED black
     }
