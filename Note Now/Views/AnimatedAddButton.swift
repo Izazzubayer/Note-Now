@@ -31,7 +31,7 @@ struct AnimatedAddButton: View {
         .accessibilityHint("Creates a new note")
         .buttonStyle(PlainButtonStyle())
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
-            withAnimation(AppTheme.Animation.easeInOut(duration: 0.1)) {
+            withAnimation(AppTheme.Animation.easeInOut) {
                 isPressed = pressing
             }
         }, perform: {})

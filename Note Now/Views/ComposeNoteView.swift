@@ -5,7 +5,7 @@ struct ComposeNoteView: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var title = ""
-    @State private var body = ""
+    @State private var noteBody = ""
     @State private var isTitleFocused = true
     @FocusState private var focusedField: Field?
     
@@ -58,7 +58,7 @@ struct ComposeNoteView: View {
                             .appSecondaryText()
                             .padding(.horizontal, AppTheme.Spacing.lg)
                         
-                        TextEditor(text: $body)
+                        TextEditor(text: $noteBody)
                             .font(AppTheme.Typography.body)
                             .appPrimaryText()
                             .focused($focusedField, equals: .body)
@@ -92,7 +92,7 @@ struct ComposeNoteView: View {
                     .font(AppTheme.Typography.body)
                     .fontWeight(.semibold)
                     .appPrimaryText()
-                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && noteBody.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .accessibilityLabel("Save note")
                     .accessibilityHint("Saves the current note")
                 }
@@ -108,7 +108,7 @@ struct ComposeNoteView: View {
             // Swipe to dismiss keyboard
             DragGesture()
                 .onEnded { value in
-                    if value.translation.y > 100 {
+                    if value.translation.height > 100 {
                         focusedField = nil
                     }
                 }
@@ -127,7 +127,7 @@ struct ComposeNoteView: View {
     
     private func saveNote() {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedBody = noteBody.trimmingCharacters(in: .whitespacesAndNewlines)
         
         if !trimmedTitle.isEmpty || !trimmedBody.isEmpty {
             let note = Note(title: trimmedTitle, body: trimmedBody)
