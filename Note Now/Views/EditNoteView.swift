@@ -74,11 +74,6 @@ struct EditNoteView: View {
                     
                     // Body field
                     VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-                        Text("Body")
-                            .font(AppTheme.Typography.headline)
-                            .appSecondaryText()
-                            .padding(.horizontal, AppTheme.Spacing.lg)
-                        
                         TextEditor(text: $noteBody)
                             .font(AppTheme.Typography.body)
                             .appPrimaryText()
