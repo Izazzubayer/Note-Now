@@ -49,15 +49,15 @@ struct ComposeNoteView: View {
                             .accessibilityLabel("Note title")
                             .accessibilityHint("Enter the title for your note")
                     }
-                    .padding(.bottom, AppTheme.Spacing.lg)
+                    .padding(.bottom, AppTheme.Spacing.sm)
                     
                     // Body field
-                    VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-                        TextEditor(text: $noteBody)
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                        TextField("Body", text: $noteBody)
                             .font(AppTheme.Typography.body)
                             .appPrimaryText()
+                            .textFieldStyle(PlainTextFieldStyle())
                             .focused($focusedField, equals: .body)
-                            .scrollContentBackground(.hidden)
                             .padding(.horizontal, AppTheme.Spacing.lg)
                             .accessibilityLabel("Note content")
                             .accessibilityHint("Enter the content for your note")
